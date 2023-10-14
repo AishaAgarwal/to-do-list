@@ -1,11 +1,74 @@
 // for storing the inputs by user
+// import { initializeApp } from "firebase/app";
+// import { getMessaging, getToken } from "firebase/messaging";
+import { initializeApp} from 'https://www.gstatic.com/firebasejs/9.6.3/firebase-app.js' ;
+import {getMessaging, getToken} from 'https://www.gstatic.com/firebasejs/9.6.3/firebase-messaging.js' ;
+
 const todoobjectlist = []; 
+
+
+function intializeFirebase() {
+    const firebaseConfig = {
+        apiKey: 'AIzaSyBvxbFPNM2dtLP5TU5xvkxQZcYgHdowN7I',
+        authDomain: 'to-do-list-80eda.firebaseapp.com',
+        projectId: 'to-do-list-80eda',
+        storageBucket: 'to-do-list-80eda.appspot.com',
+        messagingSenderId: '494269479510',
+        appId: '1:494269479510:web:dd70b8068ccb277f0819f7',
+      };
+    
+    
+    const app = initializeApp(firebaseConfig);
+    const messaging = getMessaging(app);
+
+    
+
+  
+    // requestPermission(messaging)
+    //   .then((currentToken) => {
+    //     if (currentToken) {
+    //       this.sendTokenToServer(currentToken);
+    //     } else {
+    //       console.log('No instance ID token available.');
+    //     }
+    //   })
+    //   .catch((err) => {
+    //     console.log('An error occurred while retrieving token: ', err);
+    //   });
+
+    
+        console.log('Requesting permission...');
+        Notification.requestPermission().then((permission) => {
+          if (permission === 'granted') {
+            console.log('Notification permission granted.');
+            getToken(messaging, {vapidKey: "BPnh98Rsgc7tJtref_HdhcYZ-UHkQMO-rA8sqmyrU-EnSLCSUWCP7EkDFAsVDpMKzqxNqU0q7EcK83SA535mwUA"}).then((currentToken) => {
+                if (currentToken) {
+                    sendTokenToServer(currentToken);
+                  // Send the token to your server and update the UI if necessary
+                  // ...
+                } else {
+                  // Show permission request UI
+                  console.log('No registration token available. Request permission to generate one.');
+                  // ...
+                }
+              }).catch((err) => {
+                console.log('An error occurred while retrieving token. ', err);
+                // ...
+              });
+        }})
+}
+
+intializeFirebase();
 
 class todo_class{
     constructor(item){
         this.ulElement = item;
+        
     }
 
+    
+
+      
     comparePriority(a,b){
         const priorityOrder = ["top","middle","low"];
         if (priorityOrder.indexOf(a.priority) < priorityOrder.indexOf(b.priority)){
@@ -122,3 +185,56 @@ document.querySelector(".addbtn").addEventListener("click", function() {
     mytodolist.add()
 })
 
+function sendTokenToServer(token){
+    console.log(token);
+
+    // const serverURL = 'BPnh98Rsgc7tJtref_HdhcYZ-UHkQMO-rA8sqmyrU-EnSLCSUWCP7EkDFAsVDpMKzqxNqU0q7EcK83SA535mwUA';
+    // const data = {
+    //     token : token,
+    // };
+
+
+    // fetch(serverURL,{
+    //     method: 'POST',
+    //     headers: {
+    //         'Content-Type' : 'application/json',
+    //     },
+    //     body: JSON.stringify(data),
+    // })
+    // .then(function(response){
+    //     if (response.ok){
+    //         console.log('Token sent to server successfully.');
+
+    //     }
+    //     else{
+    //         console.error('Failed to send token to server.')
+    //     }
+    // })
+    // .catch(function(error){
+    //     console.error('Error sending token to server: ',error)
+    // });
+
+}
+
+function scheduleNotifications(){
+    const now = new Date();
+
+    todoobjectlist.forEach((task) => {
+        if (!task.isdone && task.deadline){
+            const taskDeadline = new Date(task.deadline);
+            const timeDiff = taskDeadline - now;
+            const oneHour = 60 * 60 * 1000;
+
+            if (timeDiff <= oneHour && timeDiff > 0){
+                const notificationTitle = "Task Reminder";
+                const notificationOptions = {
+                    body : `The task "${task.todotext}" is due in one hour (${task.deadline}).`,
+                };
+
+                new Notification(notificationTitle, notificationOptions);
+            }
+        }
+    });
+}
+
+setInterval(scheduleNotifications, 6000)
