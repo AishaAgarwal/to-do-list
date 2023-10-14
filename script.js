@@ -6,6 +6,37 @@ class todo_class{
         this.ulElement = item;
     }
 
+    comparePriority(a,b){
+        const priorityOrder = ["top","middle","low"];
+        if (priorityOrder.indexOf(a.priority) < priorityOrder.indexOf(b.priority)){
+            return -1;
+        }
+        else if (priorityOrder.indexOf(a.priority) > priorityOrder.indexOf(b.priority)){
+            return 1;
+        }
+        else{
+            if (a.deadline && b.deadline) {
+                const dateA = new Date(a.deadline);
+                const dateB = new Date(b.deadline);
+
+                if (dateA < dateB){
+                    return -1;
+                }
+                else if (dateA > dateB){
+                    return 1;
+                }
+            
+            }
+            else if (!a.deadline && b.deadline){
+                return -1;
+            }
+            else if (a.deadline && !b.deadline){
+                return 1;
+            }
+            return 0;
+        }
+    }
+
     add(){
         const todoinput = document.querySelector("#myInput").value;
         const priority = document.querySelector("#priority").value;
@@ -18,6 +49,7 @@ class todo_class{
                 id : todoobjectlist.length,
                 todotext : todoinput,
                 isdone : false,
+                priority : priority,
                 deadline : deadline,
             }
         todoobjectlist.unshift(todoobject); // unshift is used instead of push because most recent entries are required on top
@@ -41,18 +73,26 @@ class todo_class{
     display(){
         this.ulElement.innerHTML = ""; // for cleaning the input area in the beginnig
 
-        
+        todoobjectlist.sort(this.comparePriority);
 
         todoobjectlist.forEach((object_item) => {
             const liElement = document.createElement("li");
             const delBtn = document.createElement("i"); // for trash icon
     
-            liElement.innerText = `${object_item.todotext} (Deadline: ${object_item.deadline})`; // Display the deadline
+            const priorityspan = document.createElement("span");
+            const deadlinespan = document.createElement("span");
+
+            liElement.innerText = object_item.todotext;
             liElement.setAttribute("data-id", object_item.id);
+
+            priorityspan.innerText = "\nPriority: " + object_item.priority;
+            deadlinespan.innerText = "\nDeadline: " + object_item.deadline;
     
             delBtn.setAttribute("data-id", object_item.id);
             delBtn.classList.add("far","fa-trash-alt");
 
+            liElement.appendChild(priorityspan);
+            liElement.appendChild(deadlinespan);
             liElement.appendChild(delBtn);
     
             delBtn.addEventListener("click",function(e) {
