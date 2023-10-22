@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify
 from pyfcm import FCMNotification
+from flask_cors import CORS
 
 
 app = Flask(__name__)
-server_key = 'BPnh98Rsgc7tJtref_HdhcYZ-UHkQMO-rA8sqmyrU-EnSLCSUWCP7EkDFAsVDpMKzqxNqU0q7EcK83SA535mwUA'
+CORS(app)
+server_key = 'AIzaSyBvxbFPNM2dtLP5TU5xvkxQZcYgHdowN7I'
 
-@app.route('/send_notifiction', methods = ['POST'])
+@app.route('/send_notification', methods = ['POST'])
 def send_notification():
     try:
         user_token = request.form.get('token')
@@ -19,4 +21,4 @@ def send_notification():
         return jsonify({"success" : False, "error" : str(e)})
     
 if __name__ == '__main__':
-    app.run(debug = True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

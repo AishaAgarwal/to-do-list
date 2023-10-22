@@ -2,9 +2,13 @@
 // import { initializeApp } from "firebase/app";
 // import { getMessaging, getToken } from "firebase/messaging";
 import { initializeApp} from 'https://www.gstatic.com/firebasejs/9.6.3/firebase-app.js' ;
-import {getMessaging, getToken} from 'https://www.gstatic.com/firebasejs/9.6.3/firebase-messaging.js' ;
+import {getMessaging, getToken, onMessage} from 'https://www.gstatic.com/firebasejs/9.6.3/firebase-messaging.js' ;
+
 
 const todoobjectlist = []; 
+
+
+
 
 
 function intializeFirebase() {
@@ -20,7 +24,9 @@ function intializeFirebase() {
     
     const app = initializeApp(firebaseConfig);
     const messaging = getMessaging(app);
-
+    onMessage(messaging, (payload) =>{
+        console.log('Message recieved. ',payload);
+    })
     
 
   
@@ -59,6 +65,8 @@ function intializeFirebase() {
 }
 
 intializeFirebase();
+
+
 
 class todo_class{
     constructor(item){
@@ -100,27 +108,36 @@ class todo_class{
         }
     }
 
-    add(){
+    add() {
         const todoinput = document.querySelector("#myInput").value;
         const priority = document.querySelector("#priority").value;
-        const deadline = document.querySelector("#deadline").value;
-        if (todoinput == "" || deadline == ""){
-            alert("Either You did not enter any item or the deadline is not selected for the task!")
-    }
-        else{
-            const todoobject = {
-                id : todoobjectlist.length,
-                todotext : todoinput,
-                isdone : false,
-                priority : priority,
-                deadline : deadline,
+        let deadline = document.querySelector("#deadline").value;
+    
+        if (todoinput === "" || deadline === "") {
+            alert("Either you did not enter any item or the deadline is not selected for the task!");
+        } else {
+            const defaultDeadline = "2023-12-31"; // You can set a default date here.
+    
+            // If deadline is empty, use the default deadline.
+            if (!deadline) {
+                deadline = defaultDeadline;
             }
-        todoobjectlist.unshift(todoobject); // unshift is used instead of push because most recent entries are required on top
-        this.display();
-        document.querySelector("#myInput").value = ' ';
-        document.querySelector("#deadline").value = ' ';
+    
+            const todoobject = {
+                id: todoobjectlist.length,
+                todotext: todoinput,
+                isdone: false,
+                priority: priority,
+                deadline: deadline,
+            };
+    
+            todoobjectlist.unshift(todoobject); // unshift is used instead of push because most recent entries are required on top
+            this.display();
+            document.querySelector("#myInput").value = "";
+            document.querySelector("#deadline").value = "";
         }
     }
+    
 
     done_undone(x){
         const selectedtodoindex = todoobjectlist.findIndex((item) => item.id == x);
@@ -179,15 +196,37 @@ class todo_class{
 
 
 const listSection = document.querySelector("#mytasks");
-mytodolist = new todo_class(listSection);
+const mytodolist = new todo_class(listSection);
 
 document.querySelector(".addbtn").addEventListener("click", function() {
-    mytodolist.add()
-})
+    mytodolist.add();
+});
+
+
 
 function sendTokenToServer(token){
     console.log(token);
-
+    const serverURL = 'http://localhost:5000/send_notification';
+    const data = new URLSearchParams();
+    data.append('token',token);
+    
+    fetch(serverURL, {
+        method : 'POST',
+        //  mode: 'no-cors',
+        body: data,
+    })
+    .then((response) => {
+        if (response.ok){
+            console.log('Token sent to the server successfully');
+        }
+        else{
+            console.error('Failed to send token to the server.');
+        }
+    })
+    .catch((error) =>{
+        console.error('Error sending token to server: ',error);
+    })
+}
     // const serverURL = 'BPnh98Rsgc7tJtref_HdhcYZ-UHkQMO-rA8sqmyrU-EnSLCSUWCP7EkDFAsVDpMKzqxNqU0q7EcK83SA535mwUA';
     // const data = {
     //     token : token,
@@ -213,8 +252,17 @@ function sendTokenToServer(token){
     // .catch(function(error){
     //     console.error('Error sending token to server: ',error)
     // });
-
+function showNotification(title, message){
+    if (!("Notification" in window)) {
+        console.log("This browser does not support notifications.");
+    }
+    else{
+        if (Notification.permission == "granted"){
+            new Notification(title, {body: message});
+        }
+    }
 }
+
 
 function scheduleNotifications(){
     const now = new Date();
@@ -223,18 +271,17 @@ function scheduleNotifications(){
         if (!task.isdone && task.deadline){
             const taskDeadline = new Date(task.deadline);
             const timeDiff = taskDeadline - now;
-            const oneHour = 60 * 60 * 1000;
+            const oneHour = 24 * 60 * 60 * 1000;
 
             if (timeDiff <= oneHour && timeDiff > 0){
                 const notificationTitle = "Task Reminder";
-                const notificationOptions = {
-                    body : `The task "${task.todotext}" is due in one hour (${task.deadline}).`,
-                };
+                const notificationmessage = `The task "${task.todotext}" is due in one hour (${task.deadline}).`;
 
-                new Notification(notificationTitle, notificationOptions);
+
+                showNotification(notificationTitle, notificationmessage);
             }
         }
     });
 }
 
-setInterval(scheduleNotifications, 6000)
+setInterval(scheduleNotifications, 60000)
